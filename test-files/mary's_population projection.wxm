@@ -1,0 +1,43 @@
+/*population projection*/
+aa:makelist((rand_with_step(60000,65000,500)), i, 1, 2);/*population of 0-14 1960 and 1975*/
+ageset_1a:aa[1];
+ageset_1b:aa[2];
+bb:makelist((rand_with_step(50000,60000,500)), i, 1, 2);/*population of 15-29 1960 and 1975*/
+ageset_2a:bb[1];
+ageset_2b:bb[2];
+cc:makelist((rand_with_step(45000,49000,500)), i, 1, 2);/*population of 30-34 1960 and 1975*/
+ageset_3a:cc[1];
+ageset_3b:cc[2];
+dd:makelist((rand_with_step(40000,44000,500)), i, 1, 2);/*population of 45-59 1960 and 1975*/
+ageset_4a:dd[1];
+ageset_4b:dd[2];
+ee:makelist((rand_with_step(35000,40000,500)), i, 1, 2);/*population of 60+ 1960 and 1975*/
+ageset_5a:ee[1];
+ageset_5b:ee[2];
+
+/* Have to make sure that the number of births exceeds ageset_1b */
+births_1:rand_with_step(round(0.5*ageset_1b),round(0.6*ageset_1b),1);
+births_2:rand_with_step(round(0.5*ageset_1b),round(0.6*ageset_1b),1);
+
+/*probabilities of surving from one age to another*/
+p1:decimalplaces(ageset_2b/ageset_1a,3);
+p2:decimalplaces(ageset_3b/ageset_2a,3);
+p3:decimalplaces(ageset_4b/ageset_3a,3);
+p4:decimalplaces(ageset_5b/(ageset_4a+ageset_5a),3);
+p5:decimalplaces(ageset_5b/(ageset_4a+ageset_5a),3);
+
+/*fertility rates*/
+f_2:decimalplaces(births_1/((ageset_2a+ageset_1a*p1)*15/2),3);/*fertility rate 2*/
+f_3:decimalplaces(births_2/((ageset_3a+ageset_2a*p2)*15/2),3);/*fertility rate 3*/
+pb:decimalplaces(ageset_1b/(births_1+births_2),3);
+f1:decimalplaces(p1*(15/2)*f_2*pb,3);
+f2:decimalplaces(p2*(15/2)*f_3*pb+(7.5*f_2*pb),3);
+f3:decimalplaces((15/2)*f_3*pb,3);
+
+
+/*projection*/
+proj_1:round((f1*ageset_1b)+(f2*ageset_2b)+(f3*ageset_3b));
+proj_2:round(ageset_1b*p1);
+proj_3:round(ageset_2b*p2);
+proj_4:round(ageset_3b*p3);
+proj_5:round((p4*ageset_4b)+(p5*ageset_5b));
