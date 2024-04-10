@@ -4,7 +4,7 @@
 round_dp_n(float_number,decimal_places):=block(
     [float_number:float_number, decimal_places:decimal_places,multiplied_number,residual,multiplied_number_truncated,rounded_number],
     multiplied_number:float_number*10^decimal_places,
-    multiplied_number_truncated:floor(multiplied_number)
+    multiplied_number_truncated:floor(multiplied_number),
     residual:floor(10*(multiplied_number - multiplied_number_truncated)),
     rounded_number: if residual >=5 then multiplied_number_truncated+1 else multiplied_number_truncated,
     rounded_number:float(rounded_number/10^decimal_places),
