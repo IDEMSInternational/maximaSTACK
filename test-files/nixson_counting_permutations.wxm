@@ -1,5 +1,6 @@
 /* [wxMaxima batch file version 1] [ DO NOT EDIT BY HAND! ]*/
 /* [ Created with wxMaxima version 22.04.0 ] */
+/*Addressed*/
 /* [wxMaxima: input   start ] */
 K:rand([4,6,8,9]);
 k:if K=4 then 4 elseif K=6 then 6 elseif K=8 then 8 else 8;
