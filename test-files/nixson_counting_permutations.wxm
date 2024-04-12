@@ -1,0 +1,31 @@
+/* [wxMaxima batch file version 1] [ DO NOT EDIT BY HAND! ]*/
+/* [ Created with wxMaxima version 22.04.0 ] */
+/* [wxMaxima: input   start ] */
+K:rand([4,6,8,9]);
+k:if K=4 then 4 elseif K=6 then 6 elseif K=8 then 8 else 8;
+n1:if K=4 then 1 elseif K=6 then 2 elseif K=8 then 1 else 2;
+n2:2;
+n3:if K=4 then 1 elseif K=6 then 1 elseif K=8 then 2 else 1;
+n4:if K=6 then 1 elseif K=8 then 2 else 1;
+n5:1;
+n6:1;
+a2:rand(["GOOGLE","ENGINE"]);
+w1:if a2="GOOGLE" then "G" else "E";
+w2:if a2="GOOGLE" then "O" else "N";
+w3:if a2="GOOGLE" then "L" else "G";
+w4:if a2="GOOGLE" then "E" else "I";
+W1:if K=4 then "L" elseif K=6 then w1 elseif K=8 then "I" else "R";
+W2:if K=4 then "O" elseif K=6 then w2 elseif K=8 then "N" else "E";
+W3:if K=4 then "K" elseif K=6 then w3 elseif K=8 then "T" else "S";
+W4:if K=6 then w4 elseif K=8 then "E" else "A";
+W5:if K=8 then "R" else "C";
+W6:"H";
+word1:if K=4 then "three" elseif K=6 then "four" elseif K=8 then "five" else "six";
+word:if K=4 then "LOOK" elseif K=6 then a2 elseif K=8 then "INTERNET" else "RESEARCH";
+ta:if K=4 then ((factorial(K))/((factorial(n1))*(factorial(n2))*(factorial(n3)))) elseif K=6 then ((factorial(K))/((factorial(n1))*(factorial(n2))*(factorial(n3))*(factorial(n4)))) elseif K=8 then ((factorial(K))/((factorial(n1))*(factorial(n2))*(factorial(n3))*(factorial(n4))*(factorial(n5)))) else ((factorial(8))/((factorial(n1))*(factorial(n2))*(factorial(n3))*(factorial(n4))*(factorial(n5))*(factorial(n6))));
+/* [wxMaxima: input   end   ] */
+
+
+
+/* Old versions of Maxima abort on loading files that end in a comment. */
+"Created with wxMaxima 22.04.0"$
