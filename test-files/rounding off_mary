@@ -1,0 +1,6 @@
+/*a shorter vesrions of rounding off code*/
+round_dp_n(float_number, decimal_places) :=
+  block(
+    [rounded_number: floor(float_number * 10^decimal_places + 0.5)],
+    float(rounded_number / 10^decimal_places)
+  );
