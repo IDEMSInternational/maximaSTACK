@@ -1,0 +1,135 @@
+/*  Author Luke Longworth
+    University of Canterbury
+    Copyright (C) 2024 Luke Longworth
+
+    This program is free software: you can redistribute it or modify
+    it under the terms of the GNU General Public License version two.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+    GNU General Public License for details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program. If not, see <http://www.gnu.org/licenses/>. */
+
+/****************************************************************/
+/*  Linear algebra functions for STACK                          */
+/*                                                              */
+/*  V0.2.4 May 2024                                             */
+/*                                                              */
+/****************************************************************/
+
+/*******************************************************************************/
+/* Provides convenience functions for column and row vectors for student input */
+/*******************************************************************************/
+texput(c,
+  lambda([ex], block([ns,str,ii],
+    ns: args(ex),
+    str: ["\\begin{bmatrix} "],
+    for ii: 1 thru length(ns) do (str: append(str, [ev(tex1(ns[ii]),simp), " \\\\ "])),
+    str[length(str)]: " \\end{bmatrix}",
+    simplode(str)
+  ))
+);
+
+texput(r,
+  lambda([ex], block([ns,str,ii],
+    ns: args(ex),
+    str: ["\\begin{bmatrix} "],
+    for ii: 1 thru length(ns) do (str: append(str, [ev(tex1(ns[ii]),simp), " & "])),
+    str[length(str)]: " \\end{bmatrix}",
+    simplode(str)
+  ))
+);
+
+declare([c,r],nonscalar);
+
+/**
+ * Converts c and r into matrices.
+ * Works on entire expressions.
+ * Returns expression unchanged if simp:true and matrices do not conform.
+ * 
+ * @param[expression] ex An expression that may contain c or r 
+ * @return[scalar expression] The expression with c and r replaced with matrices, or the original expression if matrices do not conform
+ */
+vec_convert(ex):= block([ex2],
+  ex2: errcatch(ev(ex,c = lambda([[ex]],transpose(matrix(ex))),r = lambda([[ex]],matrix(ex)))),
+  if emptyp(ex2) then return(ex) else return(first(ex2))
+);
+
+/**
+ * Given a row or column vector, convert it to c() or r() form.
+ * Intended to create model answers in instances where students
+ * are expected to use these convenience functions.
+ * Does not loop through an expression, will only work on vectors
+ * as individual objects. 
+ *
+ * @param[matrix] ex A vector; i.e. a 1xN or Mx1 matrix
+ * @return[expression] That vector as a c() or r() vector
+ */
+un_vec_convert(ex):= block([],
+  if col_vecp(ex) then ex: apply(c,list_matrix_entries(ex)) else
+  if row_vecp(ex) then ex: apply(r,list_matrix_entries(ex)),
+  return(ex)
+);
+
+/*******************************************************************************/
+/* Predicate functions for vectors                                             */
+/*******************************************************************************/
+
+/**
+ * A predicate to determine whether an expression has been converted to matrix form.
+ * 
+ * @param[expression] ex An expression that may contain c or r
+ * @return[boolean] Does the expression contain c or r?
+ */
+vec_convertedp(ex):= block([ex_ops],
+  ex_ops: get_ops(ex),
+  if member(c,ex_ops) or member(r,ex_ops) then return(false) else return(true)
+);
+
+/** 
+ * Predicate for determining whether a given object is an Mx1 matrix (a column vector)
+ * Note: does not consider c a column vector. Use vec_convert before col_vecp.
+ *
+ * @param[expression] ex An object that may be a matrix
+ * @return[boolean] Is the object an Mx1 matrix?
+ */
+col_vecp(ex):= block(
+  if not(matrixp(ex)) then return(false)
+  else return(is(second(matrix_size(ex))=1))
+);
+
+/** 
+ * Predicate for determining whether a given object is a 1xN matrix (a row vector)
+ * Note: does not consider r a row vector. Use vec_convert before row_vecp.
+ *
+ * @param[expression] ex An object that may be a matrix
+ * @return[boolean] Is the object a 1xN matrix?
+ */
+row_vecp(ex):= block(
+  if not(matrixp(ex)) then return(false)
+  else return(is(first(matrix_size(ex))=1))
+);
+
+/** 
+ * Predicate for determining whether a given object is a vector
+ * Note: does not consider c or r a vector. Use vec_convert before vectorp.
+ *
+ * @param[expression] ex An object that may be a matrix
+ * @return[boolean] Is the object a 1xN or Mx1 matrix?
+ */
+vectorp(ex):= col_vecp(ex) or row_vecp(ex);
+
+/* TODO write function to convert row/col vectors in matrix form to c or r form */
+/* Should be useful for creating teacher answers */
+
+/**
+ * Predicate to determine whether a given object is a unit vector.
+ * Can handle complex vectors
+ *
+ * @param[matrix] ex A vector (Mx1 or 1xN matrix)
+ * @return[boolean] Does this vector have a 2-norm of 1?
+ */
+unit_vecp(ex):= if vectorp(ex) then is(ev(ex.conjugate(ex),simp)=1) else false;

@@ -1,0 +1,69 @@
+/* This library depends on matrices.mac */
+
+/* Functions related to custom scalar products */
+
+/**
+ * Compute the orthogonal projection of v onto u with respect to scalar product sp.
+ *
+ * @param[matrix] u a mx1 matrix
+ * @param[matrix] v a mx1 matrix
+ * @param[function] sp A bilinear form, i.e. a function mapping pairs of vectors to scalars
+ * @return[vector] Orthogonal projection of v onto u
+ */
+proj(u, v, sp) := sp(v,u)/sp(u,u)*u;
+
+/**
+ * Orthogonalize the columns of a matrix with respect to a scalar product sp
+ *
+ * @param[matrix] M a mxm matrix
+ * @param[function] sp A bilinear form, i.e. a function mapping pairs of vectors to scalars
+ * @return[matrix] An mxm matrix with the same column space as M and orthogonal columns with respect to sp
+ */
+orthogonalize(M, sp) := block([u_1,u_2,u_3,v_2,v_3,AA],
+    /*Prepare Gram-Schmidt process*/
+    u_1: col(M,1),
+    v_2: col(M,2),
+    v_3: col(M,3),
+    /*orthogonalize*/
+    u_2: v_2 - proj(u_1, v_2, sp),
+    u_3: v_3 - proj(u_1, v_3, sp) - proj(u_2, v_3, sp),
+    AA: addcol(u_1, u_2, u_3),
+    return(AA)
+);
+
+/**
+ * Normalize the columns of a matrix with respect to a scalar product sp
+ *
+ * @param[matrix] M a mxm matrix
+ * @param[function] sp A bilinear form, i.e. a function mapping pairs of vectors to scalars
+ * @return[matrix] An mxm matrix with the columns of M normalized with respect to sp
+ */
+normalize(M, sp) := block([u_1,u_2,u_3,AA],
+    u_1: col(M,1),
+    u_2: col(M,2),
+    u_3: col(M,3),
+    /*normalize*/
+    u_1: u_1/sqrt(sp(u_1,u_1)),
+    u_2: u_2/sqrt(sp(u_2,u_2)),
+    u_3: u_3/sqrt(sp(u_3,u_3)),
+    AA: addcol(u_1, u_2, u_3),
+    return(AA)
+);
+
+/** 
+ * Does the given matrix have orthogonal columns with respect to spMat?
+ *
+ * @param[matrix] M a matrix
+ * @param[matrix] spMat a symmetric positive definite matrix representing a scalar product sp(u, v) := u^T.spMat.v
+ * @return[boolean] Does M have orthogonal columns with respect to spMat?
+ */
+orthogonal_columns_spp(M, spMat):= diagp(ev(expand(transpose(M).spMat.M),simp));
+
+/** 
+ * Does the given matrix have orthonormal columns with respect to spMat?
+ *
+ * @param[matrix] M a matrix
+ * @param[matrix] spMat a symmetric positive definite matrix representing a scalar product sp(u, v) := u^T.spMat.v
+ * @return[boolean] Does M have orthonormal columns with respect to spMat?
+ */
+orthonormal_columns_spp(M, spMat):= if matrixp(M) then is(ev(expand(transpose(M).spMat.M),simp) = ident(second(matrix_size(M)))) else false;

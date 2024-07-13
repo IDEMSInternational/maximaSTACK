@@ -1,0 +1,326 @@
+/*  Author Luke Longworth
+    University of Canterbury
+    Copyright (C) 2024 Luke Longworth
+
+    This program is free software: you can redistribute it or modify
+    it under the terms of the GNU General Public License version two.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+    GNU General Public License for details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program. If not, see <http://www.gnu.org/licenses/>. */
+
+/****************************************************************/
+/*  Linear algebra functions for STACK                          */
+/*                                                              */
+/*  V0.2.4 May 2024                                             */
+/*                                                              */
+/****************************************************************/
+
+/*********************************************************************************/
+/* Functions to extract parts of matrices                                        */
+/*********************************************************************************/
+
+/**
+ * Take the upper triangular part of a matrix, leaving the remaining entries = 0
+ *
+ * @param[matrix] M An mxn matrix
+ * @return[matrix] The same matrix with all entries below the diagonal set to 0
+ */
+triu(M):= block([imax,jmax],
+  if not(matrixp(M)) then return(M),
+  [imax, jmax]: ev(matrix_size(M),simp),
+  genmatrix(lambda ([ii, jj], if ii>jj then 0 else M[ii,jj]), imax, jmax)
+);
+
+/**
+ * Take the lower triangular part of a matrix, leaving the remaining entries = 0
+ *
+ * @param[matrix] M An mxn matrix
+ * @return[matrix] The same matrix with all entries above the diagonal set to 0
+ */
+tril(M):= block([imax,jmax],
+  if not(matrixp(M)) then return(M),
+  [imax, jmax]: ev(matrix_size(M),simp),
+  genmatrix(lambda ([ii, jj], if ii<jj then 0 else M[ii,jj]), imax, jmax)
+);
+
+/**
+ * Take the diagonal of a matrix, leaving the remaining entries = 0
+ *
+ * @param[matrix] M An mxn matrix
+ * @return[matrix] The same matrix with all off-diagonal entries set to 0
+ */
+diagonal(M):= block([imax,jmax],
+  if not(matrixp(M)) then return(M),
+  [imax, jmax]: ev(matrix_size(M),simp),
+  return(genmatrix(lambda([ii, jj], if is(ii=jj) then M[ii,jj] else 0), imax, jmax))
+);
+
+/**
+ * Extracts the diagonal of a matrix as a list
+ *
+ * @param[matrix] M An mxn matrix
+ * @return[list] The diagonal entries of M as a list
+ */
+diag_entries(M):= block([],
+  if not(matrixp(M)) then return([M]),
+  return(map(lambda([ex], M[ex,ex]),ev(makelist(ii,ii,1,lmin(matrix_size(M))),simp)))
+);
+
+/* We have setelmx by default to set M[i,j]: el, and we can use M[i]: r
+   to set a row of M, but columns and diagonals require a bit more thought. 
+   To match setelmx, here are setrowmx, setcolmx, and setdiagmx. They
+   have the added advantage of allowing either a replacement list or a 
+   number that is to be repeated in the relevant part of the matrix. */
+
+/**
+ * Replace row i of matrix M with r.
+ * If r is a list or a matrix, replace the row exactly. Nothing will happen if r does not conform.
+ * If r is a number, fill row i with the value r.
+ * Companion to setelmx
+ *
+ * @param[number, list or matrix] r the replacement row (or value that will be repeated in the row)
+ * @param[integer] i the index of the row that will be replaced
+ * @param[matrix] M the matrix whose row is being replaced
+ * @return[matrix] The matrix M with row i replaced by r.
+ */
+setrowmx(r,i,M):= block([rows],
+  rows: args(copymatrix(M)),
+  if matrixp(r) then r: list_matrix_entries(r),
+  if numberp(r) then r: ev(makelist(r,ii,1,second(matrix_size(M))),simp),
+  if listp(r) then rows[i]: r,
+  errcatch(M: apply(matrix,rows)),
+  return(M)
+);
+
+/**
+ * Replace column i of matrix M with c.
+ * If c is a list or a matrix, replace the column exactly. Nothing will happen if c does not conform.
+ * If c is a number, fill row i with the value c.
+ * Companion to setelmx
+ *
+ * @param[number, list or matrix] c the replacement column (or value that will be repeated in the column)
+ * @param[integer] i the index of the column that will be replaced
+ * @param[matrix] M the matrix whose column is being replaced
+ * @return[matrix] The matrix M with column i replaced by c.
+ */
+setcolmx(c,i,M):= block([cols],
+  cols: args(copymatrix(transpose(M))),
+  if matrixp(c) then c: list_matrix_entries(c),
+  if numberp(c) then c: ev(makelist(c,ii,1,first(matrix_size(M))),simp),
+  if listp(c) then cols[i]: c,
+  errcatch(M: transpose(apply(matrix,cols))),
+  return(M)
+);
+
+/**
+ * Replace diagonal k of matrix M with L.
+ * If L is a list, replace the diagonal exactly.
+ * If L is too short to fill the diagonal, then any remaining diagonal entries are untouched
+ * If L is too long for the diagonal, then only the first l entries of L are used, where l is the length of the diagonal.
+ * If L is a number, fill the diagonal with the value L.
+ * If the optional argument k is given, then choose the kth diagonal. For example, setdiagmx(L,M,1) will adjust the values one entry above the primary diagonal.
+ * Companion to setelmx
+ *
+ * @param[number or list] L the replacement diagonal (or value that will be repeated in the diagonal)
+ * @param[matrix] M the matrix whose column is being replaced
+ * @param[integer] Optional: k the diagonal offset. 
+ * @return[matrix] The matrix M with diagonal k replaced by L.
+ */
+setdiagmx(L,M,[k]):= block([m,n,ii,jj],
+  [m, n]: matrix_size(M),
+  if emptyp(k) then k: 0 else k: first(k),
+  if not(listp(L)) then L: ev(makelist(L,ii,1,max(m,n)),simp),
+  for ii: 1 thru m do block(
+    ii: ev(ii,simp),
+    for jj: 1 thru n do block(
+      jj: ev(jj,simp),
+      if ev(is(ii+k=jj),simp) then errcatch(M[ii,jj]: L[ev(min(ii,jj),simp)])
+    )
+  ),
+  return(M)
+);
+
+/*********************************************************************************/
+/* Predicate functions for matrices                                              */
+/*********************************************************************************/
+
+/** 
+ * Predicate to determine whether a matrix is upper triangular
+ * i.e. Is every entry below the diagonal equal to 0?
+ * Does not check whether a matrix is in row echelon form
+ *
+ * @param[matrix] M An mxn matrix
+ * @return[boolean] Is this matrix upper triangular?
+ */
+triup(M):= block([tri,imax,jmax,ii,jj],
+  if not(matrixp(M)) then return(false),
+  tri: true,
+  [imax, jmax]: ev(matrix_size(M),simp),
+  if is(imax=1) then return(true),
+  for ii: 2 thru imax while tri do block(
+    ii: ev(ii,simp),
+    for jj: 1 thru ev(min(ii-1,jmax),simp) while tri do block(
+      jj: ev(jj,simp),
+      if not(is(M[ii,jj]=0)) then tri: false
+    )
+  ),
+  return(tri)
+);
+
+/** 
+ * Predicate to determine whether a matrix is lower triangular
+ * i.e. Is every entry above the diagonal equal to 0?
+ *
+ * @param[matrix] M An mxn matrix
+ * @return[boolean] Is this matrix lower triangular?
+ */
+trilp(M):= block([tri,imax,jmax,ii,jj],
+  if not(matrixp(M)) then return(false),
+  tri: true,
+  [imax, jmax]: ev(matrix_size(M),simp),
+  if is(jmax=1) then return(true),
+  for jj: 2 thru jmax while tri do block(
+    jj: ev(jj,simp),
+    for ii: 1 thru ev(min(jj-1,imax),simp) while tri do block(
+      ii: ev(ii,simp),
+      if not(is(M[ii,jj]=0)) then tri: false
+    )
+  ),
+  return(tri)
+);
+
+/** 
+ * Predicate to determine whether a matrix is diagonal
+ * i.e. Is every off-diagonal entry equal to 0?
+ *
+ * @param[matrix] M An mxn matrix
+ * @return[boolean] Is this matrix diagonal?
+ */
+diagp(M):= block([dia,imax,jmax,ii,jj],
+  if not(matrixp(M)) then return(false),
+  dia: true,
+  [imax, jmax]: ev(matrix_size(M),simp),
+  for ii: 1 thru imax while dia do block(
+    ii: ev(ii,simp),
+    for jj: 1 thru jmax while dia do block(
+      jj: ev(jj,simp),
+      if not(is(ii=jj)) and not(is(M[ii,jj]=0)) then dia: false
+    )
+  ),
+  return(dia)
+);
+
+/** 
+ * Predicate to determine whether a matrix is in row echelon form
+ * i.e. Is every zero-row below all non-zero rows and does the pivot in each row appear to the right of the previous pivot?
+ * Optionally checks whether each pivot is equal to 1
+ * No RREFp function is given, as rref(M) is unique
+ *
+ * @param[matrix] M An mxn matrix
+ * @param[boolean] normalise_pivots Optional: If true is given here, then pivots are required to be equal to 1
+ * @return[boolean] Is this matrix in row echelon form?
+ */
+REFp(M,[normalise_pivots]):= block([isREF,pivot_row,m,n,jj,ii],
+  if emptyp(normalise_pivots) then normalise_pivots: false else normalise_pivots: first(normalise_pivots),
+  isREF: matrixp(M),
+  if isREF then block(
+    pivot_row: 0,
+    [m, n]: matrix_size(M),
+    for jj: 1 thru n do block(
+      jj: ev(jj,simp),
+      if is(pivot_row < m) then block(
+        if is(M[ev(pivot_row+1,simp),jj] # 0) then block(
+          pivot_row: ev(pivot_row + 1,simp),
+          if normalise_pivots and is(M[ev(pivot_row,simp),jj] # 1) then isREF: false
+        ),
+        for ii: ev(pivot_row+1,simp) thru m do block(
+          ii: ev(ii,simp),
+          if is(M[ii,jj] # 0) then isREF: false
+        )
+      )
+    )
+  ),
+  return(isREF)
+);
+
+/** 
+ * Is a given object a square matrix?
+ * i.e. Does the matrix have the same number of rows as columns?
+ *
+ * @param[matrix] M a matrix
+ * @return[boolean] Is M a square matrix?
+ */
+squarep(M):= block([isSquare],
+  isSquare: false,
+  if matrixp(M) then block(
+    if is(apply("=",matrix_size(M))) then isSquare: true
+  ),
+  return(isSquare)
+);
+
+/** 
+ * Is a given object a diagonalisable matrix?
+ * i.e. Is there an invertible matrix P and diagonal matrix D such that P^^-1 . M . P = D?
+ *
+ * @param[matrix] M a matrix
+ * @return[boolean] Is M a diagonalisable matrix?
+ */
+diagonalisablep(M):= if squarep(M) then ev(diagp(dispJordan(jordan(M))),simp) else false;
+
+/** 
+ * Is a given object a symmetric matrix?
+ * i.e. Is M = M^T? 
+ * NOTE: The native function symmetricp() does the same thing and more, but is currently banned.
+ *
+ * @param[matrix] M a matrix
+ * @return[boolean] Is M a symmetric matrix?
+ */
+symp(M):= if squarep(M) then is(M = ev(transpose(M),simp)) else false; 
+
+/** 
+ * Is a given object an invertible matrix?
+ * i.e. Is there a matrix M^^-1 such that M^^-1 . M = M . M^^-1 = I?
+ *
+ * @param[matrix] M a matrix
+ * @return[boolean] Is M an invertible matrix?
+ */
+invertiblep(M):= block([isInvertible],
+  isInvertible: false,
+  if squarep(M) then block(
+    if ev(is(determinant(M)#0),simp) then isInvertible: true
+  ),
+  return(isInvertible)
+);
+
+/** 
+ * Is a given object a matrix with orthogonal columns?
+ * i.e. for any two distinct columns v1 and v2, is v1 . v2 = 0?
+ *
+ * @param[matrix] M a matrix
+ * @return[boolean] Does M have orthogonal columns?
+ */
+orthogonal_columnsp(M):= diagp(ev(transpose(M) . M,expand,simp));
+
+/** 
+ * Is a given object a matrix with orthonormal columns?
+ * i.e. Is M^T . M = I? For columns v_i and v_j, is v_i . v_i = 1 and v_i . v_j = 0?
+ * Useful when analysing QR factorisation for rectangular matrices
+ *
+ * @param[matrix] M a matrix
+ * @return[boolean] Does M have orthonormal columns?
+ */
+orthonormal_columnsp(M):= if matrixp(M) then is(ev(transpose(M).M,expand,simp) = ident(second(matrix_size(M)))) else false;
+
+/** 
+ * Is a given object an orthogonal matrix?
+ * i.e. Is M^T . M = M . M^T = I?
+ *
+ * @param[matrix] M a matrix
+ * @return[boolean] Is M an orthogonal matrix?
+ */
+orth_matrixp(M):= orthonormal_columnsp(M) and squarep(M);
