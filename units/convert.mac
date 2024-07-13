@@ -1,5 +1,20 @@
 /* This library depends on vectors.mac */
 
+/*
+  We use matrix([null]) as an indicator for invalid input.
+  This has the issue that
+  lin_ind_colsp(matrix([null])) and
+  same_colspacep(matrix([null]), matrix([1]))
+  evaluate to true, even though they shouldn't.
+  Ideally, we would return matrix() instead but alas, STACK doesn't like that:
+  (%i4)
+  (%i5)
+  	#0: stack_matrix_disp(m=matrix())
+  	#1: StackDISP(expr=matrix(),exprm=)
+  	#2: _CS2l(_k=qq,_v=matrix())
+  (%i6) TIMEDOUT
+*/
+
 /**
  * Try to convert object to a column vector.
  * Supported objects include:
@@ -7,24 +22,24 @@
  * * Vectors using c notation
  * * Flat lists, ntuples (with entries interpreted as a column vector entries)
  * * TODO: Check that list is, indeed, flat.
- * If conversion is not possible, return matrix()
+ * If conversion is not possible, return matrix([null])
  *
  * @param[ex] ex 
- * @return[matrix] A Mx1 matrix representing the column vector, or matrix() if input was invalid
+ * @return[matrix] A Mx1 matrix representing the column vector, or matrix([null]) if input was invalid
  */
 convert_to_colvec(ex):= block([op1],
   ex: vec_convert(ex),
   if col_vecp(ex) then return(ex),
-  if vectorp(ex) then return(matrix()),
+  if vectorp(ex) then return(matrix([null])),
   op1: safe_op(ex),
   if member(op1,["[","ntuple"]) then return(transpose(apply(matrix,[ex]))),
-  return(matrix())
+  return(matrix([null]))
 );
 
  /**
  * Takes a collection of vectors and return the matrix that has those vectors as columns.
  * If the input is already a matrix, the matrix itself is returned.
- * If the input in invalid, matrix() is returned.
+ * If the input in invalid, matrix([null]) is returned.
  * The rationale is that further operations can still be performed on the output without
  * crashing in the feedback variables, and we can catch this case in the first PRT node.
  * The vectors themselves may be different objects. Supported objects include:
@@ -35,16 +50,16 @@ convert_to_colvec(ex):= block([op1],
  * If given a matrix, then returns the columns as a list, with each column also being a list.
  *
  * @param[] ex A list, set, ntuple or span containing vectors as matrices, lists, c, r, sets or ntuples, or a matrix
- * @return[matrix] A matrix containing the input elements as columns, or matrix() in case of invalid input.
+ * @return[matrix] A matrix containing the input elements as columns, or matrix([null]) in case of invalid input.
  */
 cols_to_matrix(L):=block([op1, colmat],
   if matrixp(L) then return(L),
   op1: safe_op(L),
-  if not(member(op1,["[","ntuple","{","span"])) then return(matrix()),
+  if not(member(op1,["[","ntuple","{","span"])) then return(matrix([null])),
   L: map(lambda([elem],convert_to_colvec(elem)),L),
-/*  if is(cardinality(setify(map(length,L))) # 1) then return(matrix()),*/
+/*  if is(cardinality(setify(map(length,L))) # 1) then return(matrix([null])),*/
   colmat: errcatch(ev(apply(addcol, L), simp)),
-  if emptyp(colmat) then return(matrix()) else first(colmat)
+  if emptyp(colmat) then return(matrix([null])) else first(colmat)
 );
 
  /**
