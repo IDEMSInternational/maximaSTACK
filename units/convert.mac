@@ -48,6 +48,14 @@ cols_to_matrix(L):=block([op1, colmat],
 );
 
  /**
+ * Takes a matrix and returns a list of its column vectors.
+ *
+ * @param[matrix] M 
+ * @return[list] List of Mx1 matrices (column vectors)
+ */
+matrix_to_cols(M):= makelist(col(M, i), i, 1, second(matrix_size(M)));
+
+ /**
  * Are the columns of this matrix linearly independent?
  *
  * @param[matrix] M
