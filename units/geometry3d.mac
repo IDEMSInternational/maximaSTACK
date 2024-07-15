@@ -1,3 +1,15 @@
+/**
+ * Get the constant term of the given expression depending on the variables
+ * in varvec
+ *
+ * @param[expression] expr
+ * @param[matrix] varvec A 3x1 matrix with the coordinate variables, e.g. matrix([x], [y], [z])
+ * @return[constant] Constant term within the expression
+ */
+constant_term(expr, [varvec]) := block([],
+  varvec: if emptyp(varvec) then matrix([x],[y],[z]) else first(varvec),
+  return(subst(makelist(varvec[i,1]=0, i, length(varvec)), expr))
+);
 
 /**
  * Take the vector representation of a 3D plane (point with spanning vectors)
@@ -9,7 +21,12 @@
  * @param[matrix] varvec A 3x1 matrix with the coordinate variables, e.g. matrix([x], [y], [z])
  * @return[equation] The cartesian equation of the plane
  */
-plane_vec_to_cartesian(P, v1, v2, varvec):= expand(determinant(addcol(varvec-P, v1, v2)))=0;
+plane_vec_to_cartesian(P, v1, v2, [varvec]):= block([eqn_root, d],
+    varvec: if emptyp(varvec) then matrix([x],[y],[z]) else first(varvec),
+    eqn_root: expand(determinant(addcol(varvec-P, v1, v2))),
+    d: -constant_term(lhs(eqn_root)),
+    return(eqn_root+d=d)
+);
 
 /**
  * Take the vector representation of a 3D line (point with spanning vector)
@@ -20,12 +37,17 @@ plane_vec_to_cartesian(P, v1, v2, varvec):= expand(determinant(addcol(varvec-P, 
  * @param[matrix] varvec A 3x1 matrix with the coordinate variables, e.g. matrix([x], [y], [z])
  * @return[list] List of two coordinate equations defining the line
  */
-line_vec_to_cartesian(P, v1, varvec):=block([i, eqns, vars],
+line_vec_to_cartesian(P, v1, [varvec]):=block([i, eqns, vars, lhs1, lhs2, d1, d2],
+    varvec: if emptyp(varvec) then matrix([x],[y],[z]) else first(varvec),
     i: if v1[1,1] # 0 then 1 else (if v1[2,1] # 0 then 2 else 3),
     eqns: ev(P+t*v1, t=(varvec[i,1]-P[i,1])/v1[i,1]),
     eqns: submatrix(i, eqns),
     vars: submatrix(i, varvec),
-    return([vars[1,1] = eqns[1,1], vars[2,1] = eqns[2,1]])
+    lhs1: expand(vars[1,1] - eqns[1,1]),
+    lhs2: expand(vars[2,1] - eqns[2,1]),
+    d1: -constant_term(lhs1),
+    d2: -constant_term(lhs2),
+    return([lhs1 + d1 = d1, lhs2 + d2 = d2])
 );
 
 /**
@@ -33,10 +55,42 @@ line_vec_to_cartesian(P, v1, varvec):=block([i, eqns, vars],
  *
  * @param[matrix] v1 A 3x1 matrix representing the first spanning vector
  * @param[matrix] v2 A 3x1 matrix representing the second spanning vector
-  * @return[equation] A normal vector to v1 and v2
+ * @return[matrix] A 3x1 matrix that is a normal vector to v1 and v2
  */
 normal_vec(v1, v2):=determinant(addcol(
         matrix([matrix([1],[0],[0])],[matrix([0],[1],[0])],[matrix([0],[0],[1])]), 
         v1, 
         v2)
+);
+
+/**
+ * Given the cartesian equation of a plane, get the normal vector.
+ *
+ * @param[equation] eqn The cartesian equation of the plane
+ * @param[matrix] varvec (optional) A 3x1 matrix with the list of variables. By default, x, y, and z.
+ * @return[matrix] A 3x1 matrix that is a normal vector for the plane
+ */
+normal_from_plane_cartesian(eqn,[varvec]):= block([expr],
+  varvec: if emptyp(varvec) then matrix([x],[y],[z]) else first(varvec),
+  expr: lhs(eqn)-rhs(eqn),
+  return(matrix([coeff(expr, varvec[1,1])],[coeff(expr, varvec[2,1])],[coeff(expr, varvec[3,1])]))
+);
+
+/**
+ * Given a 3D vector n, find two linearly independent vectors orthogonal to it.
+ * In particular, if n is the normal vector of a plane, this function returns
+ * two spanning vectors of the plane.
+ *
+ * @param[matrix] n A 3x1 matrix.
+ * @return[list] A list of two 3x1 matrices that are vectors orthogonal to n
+ */
+spanning_from_normal(n) := block([varvec, sol, rparams, exprs, v1, v2],
+  varvec: matrix([x],[y],[z]),
+  vars: list_matrix_entries(varvec),
+  sol: linsolve(transpose(n).varvec=0, vars),
+  rparams: listify(setdifference(setify(listofvars(sol)), setify(vars))),
+  exprs: map(lambda([x], expand(rhs(x))), sol),
+  v1: transpose(matrix(coeff(exprs, rparams[1]))),
+  v2: transpose(matrix(coeff(exprs, rparams[2]))),
+  return([v1,v2])
 );
