@@ -1,0 +1,42 @@
+
+/**
+ * Take the vector representation of a 3D plane (point with spanning vectors)
+ * and return its Cartesian equation.
+ *
+ * @param[matrix] P A 3x1 matrix representing a point the plane passes though
+ * @param[matrix] v1 A 3x1 matrix representing the first spanning vector
+ * @param[matrix] v2 A 3x1 matrix representing the second spanning vector
+ * @param[matrix] varvec A 3x1 matrix with the coordinate variables, e.g. matrix([x], [y], [z])
+ * @return[equation] The cartesian equation of the plane
+ */
+plane_vec_to_cartesian(P, v1, v2, varvec):= expand(determinant(addcol(varvec-P, v1, v2)))=0;
+
+/**
+ * Take the vector representation of a 3D line (point with spanning vector)
+ * and return its Cartesian equations.
+ *
+ * @param[matrix] P A 3x1 matrix representing a point the plane passes though
+ * @param[matrix] v1 A 3x1 matrix representing the first spanning vector
+ * @param[matrix] varvec A 3x1 matrix with the coordinate variables, e.g. matrix([x], [y], [z])
+ * @return[list] List of two coordinate equations defining the line
+ */
+line_vec_to_cartesian(P, v1, varvec):=block([i, eqns, vars],
+    i: if v1[1,1] # 0 then 1 else (if v1[2,1] # 0 then 2 else 3),
+    eqns: ev(P+t*v1, t=(varvec[i,1]-P[i,1])/v1[i,1]),
+    eqns: submatrix(i, eqns),
+    vars: submatrix(i, varvec),
+    return([vars[1,1] = eqns[1,1], vars[2,1] = eqns[2,1]])
+);
+
+/**
+ * Normal vector relative to two given vectors.
+ *
+ * @param[matrix] v1 A 3x1 matrix representing the first spanning vector
+ * @param[matrix] v2 A 3x1 matrix representing the second spanning vector
+  * @return[equation] A normal vector to v1 and v2
+ */
+normal_vec(v1, v2):=determinant(addcol(
+        matrix([matrix([1],[0],[0])],[matrix([0],[1],[0])],[matrix([0],[0],[1])]), 
+        v1, 
+        v2)
+);
