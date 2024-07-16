@@ -94,3 +94,16 @@ spanning_from_normal(n) := block([varvec, sol, rparams, exprs, v1, v2],
   v2: transpose(matrix(coeff(exprs, rparams[2]))),
   return([v1,v2])
 );
+
+/**
+ * Does the given vector satisfy the equation?
+ *
+ * @param[equation] eqn
+ * @param[matrix] vec A 3x1 matrix
+ * @param[matrix] varvec A 3x1 matrix with the coordinate variables, e.g. matrix([x], [y], [z])
+ * @return[boolean] true if the vectors satisfies the equation
+ */
+satisfies_equation(eqn, vec, [varvec]) := block([],
+  varvec: if emptyp(varvec) then matrix([x],[y],[z]) else first(varvec),
+  return(is(subst(makelist(varvec[i,1]=vec[i,1], i, length(varvec)), eqn)))
+);
