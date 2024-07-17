@@ -10,44 +10,38 @@
  * @param[function] sp A bilinear form, i.e. a function mapping pairs of vectors to scalars
  * @return[vector] Orthogonal projection of v onto u
  */
-proj(u, v, sp) := sp(v,u)/sp(u,u)*u;
+proj(u, v, [sp]) := block(
+    sp: if emptyp(sp) then "." else first(sp),
+    return(sp(v,u)/sp(u,u)*u)
+);
 
 /**
  * Orthogonalize the columns of a matrix with respect to a scalar product sp
  *
- * @param[matrix] M a mxm matrix
+ * @param[matrix] M a mxn matrix or list of column vectors
  * @param[function] sp A bilinear form, i.e. a function mapping pairs of vectors to scalars
- * @return[matrix] An mxm matrix with the same column space as M and orthogonal columns with respect to sp
+ * @return[matrix] An mxn matrix or list of column vectors with the same
+ *                 column space as M and orthogonal columns with respect to sp
  */
-orthogonalize(M, sp) := block([u_1,u_2,u_3,v_2,v_3,AA],
-    /*Prepare Gram-Schmidt process*/
-    u_1: col(M,1),
-    v_2: col(M,2),
-    v_3: col(M,3),
-    /*orthogonalize*/
-    u_2: v_2 - proj(u_1, v_2, sp),
-    u_3: v_3 - proj(u_1, v_3, sp) - proj(u_2, v_3, sp),
-    AA: addcol(u_1, u_2, u_3),
-    return(AA)
+orthogonalize(M, [sp]) := block([],
+    sp: if emptyp(sp) then "." else first(sp),
+    if matrixp(M) then return(transpose(apply(matrix, gramschmidt(transpose(M), sp)))),
+    return(gramschmidt(M, sp))
 );
 
 /**
  * Normalize the columns of a matrix with respect to a scalar product sp
  *
- * @param[matrix] M a mxm matrix
+ * @param[matrix] M a mxn matrix or list of column vectors
  * @param[function] sp A bilinear form, i.e. a function mapping pairs of vectors to scalars
- * @return[matrix] An mxm matrix with the columns of M normalized with respect to sp
+ * @return[matrix] An mxn matrix or list of column vectors with the columns
+ *                 of M normalized with respect to sp
  */
-normalize(M, sp) := block([u_1,u_2,u_3,AA],
-    u_1: col(M,1),
-    u_2: col(M,2),
-    u_3: col(M,3),
-    /*normalize*/
-    u_1: u_1/sqrt(sp(u_1,u_1)),
-    u_2: u_2/sqrt(sp(u_2,u_2)),
-    u_3: u_3/sqrt(sp(u_3,u_3)),
-    AA: addcol(u_1, u_2, u_3),
-    return(AA)
+normalize(M, [sp]) := block([L],
+    sp: if emptyp(sp) then "." else first(sp),
+    L: if matrixp(M) then makelist(col(M,i), i, second(matrix_size(M))) else M,
+    L: map(lambda([v], ev(v/sqrt(sp(v,v)), simp)), L),
+    if matrixp(M) then return(apply(addcol, L)) else return(L)
 );
 
 /** 
