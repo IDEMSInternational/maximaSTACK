@@ -5,7 +5,8 @@
   This has the issue that
   lin_ind_colsp(matrix([null])) and
   same_colspacep(matrix([null]), matrix([1]))
-  evaluate to true, even though they shouldn't.
+  would naturally evaluate to true, even though they shouldn't.
+  This is fixed via an explicit check.
   Ideally, we would return matrix() instead but alas, STACK doesn't like that:
   (%i4)
   (%i5)
@@ -21,7 +22,7 @@
  * * Mx1 matrices
  * * Vectors using c notation
  * * Flat lists, ntuples (with entries interpreted as a column vector entries)
- * * TODO: Check that list is, indeed, flat.
+ * * TODO: Check that list is, indeed, flat, and matrix does not contain list as entries
  * If conversion is not possible, return matrix([null])
  *
  * @param[ex] ex 
@@ -71,21 +72,41 @@ cols_to_matrix(L):=block([op1, colmat],
 matrix_to_cols(M):= makelist(col(M, i), i, 1, second(matrix_size(M)));
 
  /**
+ * Convert input to a list of column vectors of the same dimension.
+ * Returns [] if the input is invalid.
+ *
+ * @param[matrix] M A matrix or list of vectors (see cols_to_matrix)
+ * @return[list] List of Mx1 matrices (column vectors)
+ */
+to_list_of_column_vectors(L):=block([M],
+    M: cols_to_matrix(L),
+    if M = matrix([null]) then return([]),
+    return(matrix_to_cols(M))
+);
+
+ /**
  * Are the columns of this matrix linearly independent?
  *
- * @param[matrix] M
+ * @param[] M A matrix or list of vectors (see cols_to_matrix)
  * @return[boolean] 
  */
-lin_ind_colsp(M):= is(rank(M)#0 and rank(M)=second(matrix_size(M)));
+lin_ind_colsp(M):=block([],
+    M: cols_to_matrix(M),
+    if M = matrix([null]) then return(false),
+    return(is(rank(M)#0 and rank(M)=second(matrix_size(M))))
+);
 
  /**
  * Is the column space of M1 and M2 the same?
  *
- * @param[matrix] M1
- * @param[matrix] M2
+ * @param[] M1 A matrix or list of vectors (see cols_to_matrix)
+ * @param[] M2 A matrix or list of vectors (see cols_to_matrix)
  * @return[boolean] 
  */
 same_colspacep(M1,M2):=block([combined, rank_combined],
+    M1: cols_to_matrix(M1),
+    M2: cols_to_matrix(M2),
+    if M1 = matrix([null]) or M2 = matrix([null]) then return(false),
     if length(M1) # length(M2) then return(false),
     combined: errcatch(addcol(M1,M2)),
     if emptyp(combined) then return(false),

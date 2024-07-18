@@ -51,7 +51,7 @@ normalize(M, [sp]) := block([L],
  * @param[matrix] spMat a symmetric positive definite matrix representing a scalar product sp(u, v) := u^T.spMat.v
  * @return[boolean] Does M have orthogonal columns with respect to spMat?
  */
-orthogonal_columns_spp(M, spMat):= diagp(ev(expand(transpose(M).spMat.M),simp));
+orthogonal_columns_spp(M, spMat):= diagp(ev(ratsimp(expand(transpose(M).spMat.M)),simp));
 
 /** 
  * Does the given matrix have orthonormal columns with respect to spMat?
@@ -60,4 +60,4 @@ orthogonal_columns_spp(M, spMat):= diagp(ev(expand(transpose(M).spMat.M),simp));
  * @param[matrix] spMat a symmetric positive definite matrix representing a scalar product sp(u, v) := u^T.spMat.v
  * @return[boolean] Does M have orthonormal columns with respect to spMat?
  */
-orthonormal_columns_spp(M, spMat):= if matrixp(M) then is(ev(expand(transpose(M).spMat.M),simp) = ident(second(matrix_size(M)))) else false;
+orthonormal_columns_spp(M, spMat):= if matrixp(M) then is(ev(ratsimp(expand(transpose(M).spMat.M)),simp) = ident(second(matrix_size(M)))) else false;
