@@ -16,48 +16,74 @@ proj(u, v, [sp]) := block(
 );
 
 /**
- * Orthogonalize the columns of a matrix with respect to a scalar product sp
+ * Orthogonalize column vectors  with respect to a scalar product sp
  *
- * @param[matrix] M a mxn matrix or list of column vectors
+ * @param[matrix] L a mxn matrix or list of column vectors, see cols_to_matrix
  * @param[function] sp A bilinear form, i.e. a function mapping pairs of vectors to scalars
  * @return[matrix] An mxn matrix or list of column vectors with the same
- *                 column space as M and orthogonal columns with respect to sp
+ *                 column space as L and orthogonal columns with respect to sp
  */
-orthogonalize(M, [sp]) := block([],
+orthogonalize(L, [sp]) := block([M, Morth],
     sp: if emptyp(sp) then "." else first(sp),
-    if matrixp(M) then return(transpose(apply(matrix, gramschmidt(transpose(M), sp)))),
-    return(gramschmidt(M, sp))
+    M: cols_to_matrix(L),
+    if L = matrix([null]) then return(error("Malformed input. Expecting matrix or column vectors.")),
+    Morth: transpose(apply(matrix, gramschmidt(transpose(M), sp))),
+    return(if matrixp(M) then Morth else matrix_to_cols(Morth))
 );
 
 /**
- * Normalize the columns of a matrix with respect to a scalar product sp
+ * Normalize column vectors with respect to a scalar product sp
  *
- * @param[matrix] M a mxn matrix or list of column vectors
+ * @param[matrix] L a mxn matrix or list of column vectors, see cols_to_matrix
  * @param[function] sp A bilinear form, i.e. a function mapping pairs of vectors to scalars
  * @return[matrix] An mxn matrix or list of column vectors with the columns
- *                 of M normalized with respect to sp
+ *                 of L normalized with respect to sp
  */
 normalize(M, [sp]) := block([L],
     sp: if emptyp(sp) then "." else first(sp),
-    L: if matrixp(M) then makelist(col(M,i), i, second(matrix_size(M))) else M,
+    L: cols_to_cols(M),
+    if L = matrix([null]) then return(error("Malformed input. Expecting matrix or column vectors.")),
     L: map(lambda([v], ev(v/sqrt(sp(v,v)), simp)), L),
     if matrixp(M) then return(apply(addcol, L)) else return(L)
 );
 
-/** 
- * Does the given matrix have orthogonal columns with respect to spMat?
- *
- * @param[matrix] M a matrix
- * @param[matrix] spMat a symmetric positive definite matrix representing a scalar product sp(u, v) := u^T.spMat.v
- * @return[boolean] Does M have orthogonal columns with respect to spMat?
- */
-orthogonal_columns_spp(M, spMat):= diagp(ev(ratsimp(expand(transpose(M).spMat.M)),simp));
+/* Helper function for orthogonal_columnsp and orthonormal_columnsp */
+_orthogonal_check_matrix(M, [sp]):= block([dim],
+    if emptyp(sp) then return(ev(transpose(M).M, expand, simp)),
+    sp: first(sp),
+    if not matrixp(sp) then ( /* Get matrix form from scalar product */
+        dim: length(M),
+        sp: genmatrix(lambda([i, j], sp(col(ident(dim), i), col(ident(dim), j))), dim, dim)
+    ),
+    return(ev(transpose(M).sp.M, expand, ratsimp, simp))
+);
 
 /** 
- * Does the given matrix have orthonormal columns with respect to spMat?
+ * Does the given matrix/list have orthogonal columns with respect to sp?
+ * Returns false in case of malformed input.
  *
- * @param[matrix] M a matrix
- * @param[matrix] spMat a symmetric positive definite matrix representing a scalar product sp(u, v) := u^T.spMat.v
- * @return[boolean] Does M have orthonormal columns with respect to spMat?
+ * @param[matrix] L A mxn matrix or list of column vectors, see cols_to_matrix
+ * @param[matrix] sp A scalar product or a symmetric positive definite matrix S representing a scalar product sp(u, v) := u^T.S.v
+ * @return[boolean] Does L have orthogonal columns with respect to sp?
  */
-orthonormal_columns_spp(M, spMat):= if matrixp(M) then is(ev(ratsimp(expand(transpose(M).spMat.M)),simp) = ident(second(matrix_size(M)))) else false;
+orthogonal_columnsp(L, [sp]):= block([dim],
+    M: cols_to_matrix(L),
+    if M = matrix([null]) then return(false),
+    checkmat: if emptyp(sp) then _orthogonal_check_matrix(M) else _orthogonal_check_matrix(M, first(sp)),
+    return(diagp(checkmat))
+);
+
+/** 
+ * Does the given matrix/list have orthonormal columns with respect to sp?
+ * Returns false in case of malformed input.
+ *
+ * @param[matrix] L A mxn matrix or list of column vectors, see cols_to_matrix
+ * @param[matrix] sp A scalar product or a symmetric positive definite matrix S representing a scalar product sp(u, v) := u^T.S.v
+ * @return[boolean] Does L have orthonormal columns with respect to sp?
+ */
+orthonormal_columnsp(L, [sp]):= block([dim],
+    M: cols_to_matrix(L),
+    if M = matrix([null]) then return(false),
+    checkmat: if emptyp(sp) then _orthogonal_check_matrix(M) else _orthogonal_check_matrix(M, first(sp)),
+    return(is(checkmat = ident(second(matrix_size(M)))))
+);

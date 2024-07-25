@@ -22,7 +22,6 @@
  * * Mx1 matrices
  * * Vectors using c notation
  * * Flat lists, ntuples (with entries interpreted as a column vector entries)
- * * TODO: Check that list is, indeed, flat, and matrix does not contain list as entries
  * If conversion is not possible, return matrix([null])
  *
  * @param[ex] ex 
@@ -33,7 +32,7 @@ convert_to_colvec(ex):= block([op1],
   if col_vecp(ex) then return(ex),
   if vectorp(ex) then return(matrix([null])),
   op1: safe_op(ex),
-  if member(op1,["[","ntuple"]) then return(transpose(apply(matrix,[ex]))),
+  if member(op1,["[","ntuple"]) and not some(nonscalarp, args(ex)) then return(transpose(apply(matrix,[ex]))),
   return(matrix([null]))
 );
 
@@ -55,12 +54,9 @@ convert_to_colvec(ex):= block([op1],
  */
 cols_to_matrix(L):=block([op1, colmat],
   if matrixp(L) then return(L),
-  op1: safe_op(L),
-  if not(member(op1,["[","ntuple","{","span"])) then return(matrix([null])),
-  L: map(lambda([elem],convert_to_colvec(elem)),L),
-/*  if is(cardinality(setify(map(length,L))) # 1) then return(matrix([null])),*/
-  colmat: errcatch(ev(apply(addcol, L), simp)),
-  if emptyp(colmat) then return(matrix([null])) else first(colmat)
+  L: cols_to_cols(L),
+  if emptyp(L) then return(matrix([null])),
+  return(ev(apply(addcol, L), simp))
 );
 
  /**
@@ -78,10 +74,13 @@ matrix_to_cols(M):= makelist(col(M, i), i, 1, second(matrix_size(M)));
  * @param[matrix] M A matrix or list of vectors (see cols_to_matrix)
  * @return[list] List of Mx1 matrices (column vectors)
  */
-to_list_of_column_vectors(L):=block([M],
-    M: cols_to_matrix(L),
-    if M = matrix([null]) then return([]),
-    return(matrix_to_cols(M))
+cols_to_cols(L):=block([op1],
+    if matrixp(L) then return(matrix_to_cols(L)),
+    op1: safe_op(L),
+    if not(member(op1,["[","ntuple","{","span"])) then return([]),
+    L: map(lambda([elem],convert_to_colvec(elem)),L),
+    if is(cardinality(setify(map(length,L))) # 1) then return([]),
+    return(L)
 );
 
  /**

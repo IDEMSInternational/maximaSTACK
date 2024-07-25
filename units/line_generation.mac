@@ -1,36 +1,37 @@
 /*Functions*/
 /*Lines generator*/
+/* Generate 2 lines with the following relation: 1=equal, 2=parallel, 3=intersect, 4=skewed */
 /*Outputs two lists, one for each line, where the first list represents the direction vector and the second is point on the line*/
-lines_generator(x,y,z):=block(
+lines_generator(relationship, same_direction, same_point):=block(
     [l_1, l_2],
-    if x = 1 then (
+    if relationship = 1 then (
         l_1: [
             random_permutation([rand_with_step(-5,5,1),rand_with_prohib(-5,5,[0]),rand_with_prohib(-5,5,[0])]),
             random_permutation([rand_with_step(-5,5,1),rand_with_prohib(-5,5,[0]),rand_with_prohib(-5,5,[0])])
         ],
         l_2: [
-            if y = 1 then l_1[1] else rand([-2,-1,2])*l_1[1],
-            if z = 1 then l_1[2] else l_1[2] + rand([-2,-1,2])*l_1[1]
+            if same_direction = 1 then l_1[1] else rand([-2,-1,2])*l_1[1],
+            if same_point = 1 then l_1[2] else l_1[2] + rand([-2,-1,2])*l_1[1]
         ]
-    ) elseif x = 2 then (
+    ) elseif relationship = 2 then (
         l_1: [
             random_permutation([rand_with_step(-5,5,1),rand_with_prohib(-5,5,[0]),rand_with_prohib(-5,5,[0])]),
             random_permutation([rand_with_step(-5,5,1),rand_with_prohib(-5,5,[0]),rand_with_prohib(-5,5,[0])])
         ],
         l_2: [
-            if y = 1 then l_1[1] else rand([-2,-1,2])*l_1[1],
+            if same_direction = 1 then l_1[1] else rand([-2,-1,2])*l_1[1],
             l_1[2]+l_1[1]+[rand([-1,1]),rand([-1,1]),rand([-1,1])]
         ]
-    ) elseif x = 3 then (
+    ) elseif relationship = 3 then (
         l_1: [
             random_permutation([rand_with_step(-5,5,1),rand_with_prohib(-5,5,[0]),rand_with_prohib(-5,5,[0])]),
             random_permutation([rand_with_step(-5,5,1),rand_with_prohib(-5,5,[0]),rand_with_prohib(-5,5,[0])])
         ],
         l_2: [
             l_1[1] + random_permutation([rand(3),rand(3)-1,rand(2)+1]),
-            if z = 1 then l_1[2] else l_1[2] + rand([-2,-1,2])*l_1[1]
+            if same_point = 1 then l_1[2] else l_1[2] + rand([-2,-1,2])*l_1[1]
         ]
-    ) elseif x = 4 then (
+    ) elseif relationship = 4 then (
         l_1: [
             random_permutation([rand_with_step(-5,5,1),rand_with_prohib(-5,5,[0]),rand_with_prohib(-5,5,[0])]),
             random_permutation([rand_with_step(-5,5,1),rand_with_prohib(-5,5,[0]),rand_with_prohib(-5,5,[0])])
@@ -43,8 +44,13 @@ lines_generator(x,y,z):=block(
         return([l_1,l_2])
 );
 
-/* Transform set of lines to cartesian form */
-/*Input single line in vector form, and parameter chosen and outputs a list of cartesian equations for the line*/
+lines_generator_vec(relationship, same_direction, same_point):=block([l_1, l_2],
+    [l_1,l_2]: lines_generator(relationship, same_direction, same_point),
+    return ([transpose(matrix(l1)), transpose(matrix(l2))])
+);
+
+/* Transform set of lines to parametric form */
+/*Input single line in vector form, and parameter chosen and outputs a list of parametric equations for the line*/
 line_to_cartesian(a,b):=block(
     [eq_1,eq_2,eq_3],
     eq_1: x = a[2][1]+b*a[1][1],
